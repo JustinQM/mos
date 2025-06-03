@@ -4,7 +4,10 @@ AS       := nasm
 LD       := ld
 
 # Flags for compiling C and assembling ASM
-CFLAGS   := -m32 -ffreestanding -O2 -fno-pic -fno-stack-protector -Wall -Wextra
+# TODO: Make debug flags not always on
+DFLAGS   := -g -O0
+RFLAGS   := -O2
+CFLAGS   := -m32 -ffreestanding -fno-pic -fno-stack-protector -Wall -Wextra $(DFLAGS)
 ASFLAGS  := -f elf
 
 # Linker flags (assumes you have a linker.ld in the project root)
@@ -54,12 +57,17 @@ clean:
 # Run the built kernel in QEMU (i386 multiboot)
 .PHONY: qemu
 qemu: all
-	qemu-system-i386 -device VGA -display sdl -kernel $(BUILD_DIR)/kernel.bin
-
-.PHONY: qemu-iso
-qemu-iso: all
 	mkdir -p $(ISO_DIR)/boot/grub
 	cp -f iso_grub.cfg $(ISO_DIR)/boot/grub/grub.cfg
 	cp -f $(BUILD_DIR)/kernel.bin $(ISO_DIR)/boot
 	grub-mkrescue -o $(BUILD_DIR)/mos.iso $(ISO_DIR)
 	qemu-system-i386 -cdrom $(BUILD_DIR)/mos.iso -boot d -display sdl
+
+.PHONY: qemu-debug
+qemu-debug:
+	mkdir -p $(ISO_DIR)/boot/grub
+	cp -f iso_grub.cfg $(ISO_DIR)/boot/grub/grub.cfg
+	cp -f $(BUILD_DIR)/kernel.bin $(ISO_DIR)/boot
+	grub-mkrescue -o $(BUILD_DIR)/mos.iso $(ISO_DIR)
+	qemu-system-i386 -s -S -cdrom $(BUILD_DIR)/mos.iso -boot d -display sdl &
+	gdb $(BUILD_DIR)/kernel.bin -ex "target remote localhost:1234"
