@@ -61,5 +61,5 @@ qemu-iso: all
 	mkdir -p $(ISO_DIR)/boot/grub
 	cp -f iso_grub.cfg $(ISO_DIR)/boot/grub/grub.cfg
 	cp -f $(BUILD_DIR)/kernel.bin $(ISO_DIR)/boot
-	grub-mkrescue -o $(BUILD_DIR)/bos.iso $(ISO_DIR)
-	qemu-system-i386 -cdrom $(BUILD_DIR)/bos.iso -boot d -display sdl
+	grub-mkrescue -o $(BUILD_DIR)/mos.iso $(ISO_DIR)
+	qemu-system-i386 -cdrom $(BUILD_DIR)/mos.iso -boot d -display sdl
