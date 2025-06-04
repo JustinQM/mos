@@ -8,7 +8,8 @@ LD       := ld
 DFLAGS   := -g -O0
 RFLAGS   := -O2
 CFLAGS   := -m32 -ffreestanding -fno-pic -fno-stack-protector -Wall -Wextra $(DFLAGS)
-ASFLAGS  := -f elf
+DASFLAGS := -g -F dwarf
+ASFLAGS  := -f elf $(DASFLAGS)
 
 # Linker flags (assumes you have a linker.ld in the project root)
 LDFLAGS  := -m elf_i386 -T linker.ld -nostdlib

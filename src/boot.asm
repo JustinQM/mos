@@ -2,8 +2,8 @@
 
 ; Declare multiboot header
 MBALIGN equ 1 << 0 ; align loaded modules on page boundaries
-MEMINFO equ 1 << 0 ; provide memory map
-MBFLAGS equ MBALIGN | MEMINFO ; this is the Multiboot flag field
+MEMINFO equ 1 << 1 ; provide memory lower and upper
+MBFLAGS equ MBALIGN | MEMINFO; this is the Multiboot flag field
 MAGIC equ 0x1BADB002 ; magic
 CHECKSUM equ -(MAGIC + MBFLAGS) ; checksum of above, should be zero
 
@@ -28,23 +28,27 @@ extern __bss_end
 section .text
 global _start:function (_start.end - _start)
 _start:
+    cmp eax, 0x2BADB002 ; make sure multiboot passed the memory map
+    jne .hang ; TODO: make error if multiboot fails to pass mmap
+
     mov esp, stack_top ; init the stack
 
     ; this area is for critical processor initalization
     ; before the kernel is entered
 
     ; zero out bss
-    pushad
     xor eax, eax
     mov edi, __bss_start
     mov ecx, __bss_end
     sub ecx, edi
     rep stosb ; write AL (0) to [EDI] ECX times
-    popad
 
     ; ending here
 
+    
     ; declare and call kernel_main
+    push ebx
+    push 0x2BADB002
     extern kernel_main
     call kernel_main
 

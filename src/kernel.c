@@ -152,7 +152,7 @@ static void printf(const char* format, ...)
     va_end(args);
 }
 
-void kernel_main(void)
+void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 {
     terminal_setcolor(15, 1); //fg white bg blue
     terminal_clear();
@@ -160,6 +160,9 @@ void kernel_main(void)
     const char* name = "Justin";
     const int age = 25;
     printf("Your name is %s and you are %d years old!\n", name, age);
+    printf("magic:%d\n", multiboot_magic);
+    printf("multiboot_info:%d\n", multiboot_info);
+    printf("multiboot flag:%d\n", *(uint32_t*)multiboot_info);
 
     //die
     while (1)
