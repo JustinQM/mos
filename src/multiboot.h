@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#include "io.h"
+
+#define MULTIBOOT_MAGIC 0x2BADB002 
+
 /* 
  * Multiboot Information Structure
  * (All fields are laid out in order; use `flags` bits to check presence.)
@@ -137,5 +141,26 @@ typedef struct __attribute__((packed))
    uint64_t length;
    uint32_t type; 
 } MMAPInfo;
+
+
+void multiboot_memory_map_print(uint32_t mmap_length, uint32_t mmap_addr_phys) 
+{
+    MMAPInfo* entry = (MMAPInfo*)(uintptr_t)mmap_addr_phys;
+    uint8_t* end   = (uint8_t*)entry + mmap_length;
+
+    while ((uint8_t*)entry < end) 
+    {
+        /* Now `entry->size` is 20 (for a standard entry), 
+           but it could be larger if future fields are added. */
+        printf("  size      = %d\n", (uint32_t)entry->size);
+        printf("  base_addr = %d\n", (uint64_t)entry->base_addr);
+        printf("  length    = %d\n", (uint64_t)entry->length);
+        printf("  type      = %d\n\n", (uint32_t)entry->type);
+
+        /* Advance `entry` by (entry->size + sizeof(entry->size)) bytes */
+        uint8_t* next = (uint8_t*)entry + entry->size + sizeof(entry->size);
+        entry = (MMAPInfo*) next;
+    }
+}
 
 #endif //MULTIBOOT_H

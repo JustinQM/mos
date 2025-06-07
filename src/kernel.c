@@ -3,201 +3,33 @@
 #include <stdarg.h>
 
 #include "multiboot.h"
-
-/*
- * VGA text‐mode buffer starts at physical 0xB8000.
- * Each “cell” is two bytes:
- *   byte[0] = ASCII code,
- *   byte[1] = color (high nibble = background, low nibble = foreground).
- */
-
-#define VGA_ADDR ((volatile uint8_t*)0xB8000)
-#define VGA_WIDTH 80
-#define VGA_HEIGHT 25
-
-static uint8_t terminal_color = 0x07; //default
-static size_t terminal_row = 0;
-static size_t terminal_col = 0;
-
-//Combine the fg and bg into one byte
-static void terminal_setcolor(uint8_t fg, uint8_t bg)
-{
-    terminal_color = (bg << 4 ) | (fg & 0x0F);
-}
-
-static void terminal_newline(void)
-{
-    terminal_col = 0;
-    terminal_row++;
-    if (terminal_row >= VGA_HEIGHT)
-    {
-        //TODO: Introduce wrapping or scrolling
-        terminal_row = 0;
-    }
-}
-
-static void terminal_putchar(char c)
-{
-    if (c == '\n')
-    {
-        terminal_newline();
-        return;
-    }
-
-    //check boundaries
-    if ((unsigned)terminal_col >= VGA_WIDTH)
-    {
-        terminal_newline();
-    }
-
-    size_t i = (terminal_row * VGA_WIDTH + terminal_col) * 2;
-    VGA_ADDR[i] = (uint16_t)c;
-    VGA_ADDR[i + 1] = terminal_color;
-    terminal_col++;
-}
-
-static void terminal_write(const char* data, size_t len)
-{
-    for (size_t i = 0; i < len; i++)
-    {
-        terminal_putchar(data[i]);
-    }
-}
-
-static void terminal_clear(void)
-{
-    for (size_t i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++)
-    {
-        terminal_putchar('\0');
-    }
-}
-
-// naive strlen since we don't have libc
-static size_t strlen(const char* string)
-{
-    size_t len = 0;
-    while (string[len])
-    {
-        len++;
-    }
-
-    return len;
-}
-
-// naive itoa since we don't have libc
-//TODO: Use heap memory to return a buffer instead of just printing to the console
-static void itoa(uint32_t value)
-{
-    char buf[16];
-    int pos = 0;
-    if (value == 0)
-    {
-        terminal_putchar('0');
-        return;
-    }
-
-    while (value > 0)
-    {
-        buf[pos++] = '0' + (value % 10);
-        value = value / 10;
-    }
-
-    //buffer is backwards, write in reverse order
-    for (int i = pos - 1; i >= 0; i--)
-    {
-        terminal_putchar(buf[i]);
-    }
-}
-
-static void terminal_writestring(const char* string)
-{
-    terminal_write(string, strlen(string));
-}
-
-//very bad printf since we don't have libc
-static void printf(const char* format, ...)
-{
-    va_list args;
-    va_start(args, format);
-
-    for (const char* p = format; *p; p++)
-    {
-        if (*p == '%')
-        {
-            p++;
-            if (*p == 's')
-            {
-                const char* string = va_arg(args, const char*);
-                terminal_writestring(string);
-            }
-            else if (*p == 'd')
-            {
-                uint32_t d = va_arg(args, uint32_t);
-                itoa(d);
-            }
-            else if (*p == '%')
-            {
-                terminal_putchar('%');
-            }
-            else //unreconized specifier
-            {
-                //TODO: Make this an error
-                terminal_putchar('%');
-                terminal_putchar(*p);
-            }
-        }
-        else
-        {
-            terminal_putchar(*p);
-        }
-    }
-    va_end(args);
-}
-
-void memory_map_print(uint32_t mmap_length, uint32_t mmap_addr_phys) 
-{
-    MMAPInfo* entry = (MMAPInfo*)(uintptr_t)mmap_addr_phys;
-    uint8_t* end   = (uint8_t*)entry + mmap_length;
-
-    while ((uint8_t*)entry < end) 
-    {
-        /* Now `entry->size` is 20 (for a standard entry), 
-           but it could be larger if future fields are added. */
-        printf("  size      = %d\n", (uint32_t)entry->size);
-        printf("  base_addr = %d\n", (uint64_t)entry->base_addr);
-        printf("  length    = %d\n", (uint64_t)entry->length);
-        printf("  type      = %d\n\n", (uint32_t)entry->type);
-
-        /* Advance `entry` by (entry->size + sizeof(entry->size)) bytes */
-        uint8_t* next = (uint8_t*)entry + entry->size + sizeof(entry->size);
-        entry = (MMAPInfo*) next;
-    }
-}
-
+#include "io.h"
 
 void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 {
     terminal_setcolor(15, 1); //fg white bg blue
     terminal_clear();
-    printf("Hello World!\n");
-    const char* name = "Justin";
-    const int age = 25;
-    printf("Your name is %s and you are %d years old!\n", name, age);
+
+    if (multiboot_magic != MULTIBOOT_MAGIC) 
+    {
+        printf("Invalid Multiboot Magic. Got: %d and expected: %d", multiboot_magic, MULTIBOOT_MAGIC);
+        return;
+    }
 
     MultibootInfo* mb_info = (MultibootInfo*)multiboot_info;
 
     //memory flags not set
     if (!((mb_info->flags) & (1 << 6)) || !(mb_info->flags & (1 << 0)))
     {
-        printf("yeah i died\n");
-        return; //die
+        printf("Mutliboot memory flags not set (1 << 0 && 1 << 6). Got: %d", mb_info->flags);
+        return;
     }
 
     printf("multiboot flag:%d\n", mb_info->flags);
     printf("mmap length:%d\n", mb_info->mmap_length);
     printf("mmap addr:%d\n", mb_info->mmap_addr);
 
-    memory_map_print(mb_info->mmap_length, mb_info->mmap_addr);
+    multiboot_memory_map_print(mb_info->mmap_length, mb_info->mmap_addr);
 
     //die
     while (1)
