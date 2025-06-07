@@ -142,25 +142,13 @@ typedef struct __attribute__((packed))
    uint32_t type; 
 } MMAPInfo;
 
+//Takes the length and address of mmap and returns an array of MMAPInfo structs
+//mmap_length -> Length of the region provided by multiboot
+//mmap_addr -> Address of the region provided by multiboot
+//buf -> Address to store the information
+//returns -> amount of elements that were added to buf
+uint32_t multiboot_memory_map_load(uint32_t mmap_length, uint32_t mmap_addr, MMAPInfo* buf);
 
-void multiboot_memory_map_print(uint32_t mmap_length, uint32_t mmap_addr_phys) 
-{
-    MMAPInfo* entry = (MMAPInfo*)(uintptr_t)mmap_addr_phys;
-    uint8_t* end   = (uint8_t*)entry + mmap_length;
-
-    while ((uint8_t*)entry < end) 
-    {
-        /* Now `entry->size` is 20 (for a standard entry), 
-           but it could be larger if future fields are added. */
-        printf("  size      = %d\n", (uint32_t)entry->size);
-        printf("  base_addr = %d\n", (uint64_t)entry->base_addr);
-        printf("  length    = %d\n", (uint64_t)entry->length);
-        printf("  type      = %d\n\n", (uint32_t)entry->type);
-
-        /* Advance `entry` by (entry->size + sizeof(entry->size)) bytes */
-        uint8_t* next = (uint8_t*)entry + entry->size + sizeof(entry->size);
-        entry = (MMAPInfo*) next;
-    }
-}
+void multiboot_memory_map_print(MMAPInfo* mmap_info, uint32_t length);
 
 #endif //MULTIBOOT_H

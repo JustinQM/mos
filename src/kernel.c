@@ -29,7 +29,20 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
     printf("mmap length:%d\n", mb_info->mmap_length);
     printf("mmap addr:%d\n", mb_info->mmap_addr);
 
-    multiboot_memory_map_print(mb_info->mmap_length, mb_info->mmap_addr);
+    //TODO: Make this a constant
+    MMAPInfo mmap_info[256];
+
+    uint32_t mmap_info_length = multiboot_memory_map_load(mb_info->mmap_length, mb_info->mmap_addr, mmap_info);
+
+    if (mmap_info_length <= 0)
+    {
+        printf("Could not load mmap_info pairs. Got %d pairs\n", mmap_info_length);
+        return;
+    }
+
+    printf("Loaded %d mmap_info pairs\n", mmap_info_length);
+
+    multiboot_memory_map_print(mmap_info, mmap_info_length);
 
     //die
     while (1)
