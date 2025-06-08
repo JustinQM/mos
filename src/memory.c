@@ -4,19 +4,90 @@
 
 #define MMAP_BUFFER_SIZE 256
 
+typedef struct MemoryHeader
+{
+    size_t size;
+    struct MemoryHeader* previous;
+    struct MemoryHeader* next;
+    bool free;
+} MemoryHeader;
+
 typedef struct
 {
-    uint64_t low_memory_addr;
-    uint64_t low_memory_length;
-    uint64_t memory_addr;
-    uint64_t memory_length;
+    size_t low_memory_addr;
+    size_t low_memory_length;
+
+    size_t memory_addr;
+    size_t memory_length;
+
+    MemoryHeader* free_list;
 } GlobalMemoryState;
 
 static GlobalMemoryState g_memory_state = { 0 };
 
+static size_t align(size_t address, size_t alignment)
+{
+    return (address + alignment - 1) & ~(alignment - 1);
+}
+
+static void split_region(MemoryHeader* region, size_t needed)
+{
+    if (region->size >= needed + sizeof(MemoryHeader))
+    {
+        uint8_t* base = (uint8_t*)region;
+        MemoryHeader* new_region = (MemoryHeader*)(base + sizeof(MemoryHeader) + needed);
+        new_region->size = region->size - needed - sizeof(MemoryHeader);
+        new_region->free = true;
+
+        region->size = needed;
+
+        new_region->next = region->next;
+        new_region->previous = region;
+
+        if (region->next) region->next->previous = new_region;
+
+        region->next = new_region;
+    }
+}
+
+static MemoryHeader* find_free(size_t needed)
+{
+    MemoryHeader* current = g_memory_state.free_list;
+    while (current)
+    {
+        if (current->free && current->size >= needed)
+        {
+            return current;
+        }
+        current = current->next;
+    }
+    return NULL;
+}
+
+static void remove_region_from_free_list(MemoryHeader* region)
+{
+    if (region->previous) region->previous->next = region->next;
+    else g_memory_state.free_list = region->next;
+    if (region->next) region->next->previous = region->previous;
+    region->previous = NULL;
+    region->next = NULL;
+}
+
+static void* offset_region_by_header(MemoryHeader* region)
+{
+    return (void*)((uint8_t*)region + sizeof(MemoryHeader));
+}
+
+static MemoryHeader* get_region_header(void* region)
+{
+    return (MemoryHeader*)((uint8_t*)region - sizeof(MemoryHeader));
+}
+
 uint32_t memory_init(MultibootInfo* mb_info)
 {
-    printf("multiboot flag:%d\n", mb_info->flags);
+    extern uint8_t _end;
+
+    size_t kernel_end = (size_t)&_end;
 
     //memory flags not set
     if (!((mb_info->flags) & (1 << 6)) || !(mb_info->flags & (1 << 0)))
@@ -24,9 +95,6 @@ uint32_t memory_init(MultibootInfo* mb_info)
         printf("Mutliboot memory flags not set (1 << 0 && 1 << 6). Got: %d", mb_info->flags);
         return 1;
     }
-
-    printf("mmap length:%d\n", mb_info->mmap_length);
-    printf("mmap addr:%d\n", mb_info->mmap_addr);
 
     MMAPInfo mmap_info[MMAP_BUFFER_SIZE];
 
@@ -37,8 +105,6 @@ uint32_t memory_init(MultibootInfo* mb_info)
         printf("Could not load mmap_info pairs. Got %d pairs\n", mmap_info_length);
         return 1;
     }
-
-    printf("Loaded %d mmap_info pairs\n", mmap_info_length);
 
     //NOTE: This can only find one instance of high memory.
     //Is it possible for their to be multiple instances?
@@ -57,11 +123,60 @@ uint32_t memory_init(MultibootInfo* mb_info)
         }
     }
 
-    printf("Low Memory Address: %d\n", g_memory_state.low_memory_addr);
-    printf("Low Memory Length: %d\n", g_memory_state.low_memory_length);
-
-    printf("Memory Address: %d\n", g_memory_state.memory_addr);
-    printf("Memory Length: %d\n", g_memory_state.memory_length);
+    //init the free_list
+    g_memory_state.free_list = (MemoryHeader*)(g_memory_state.memory_addr + kernel_end);
+    g_memory_state.free_list->size = g_memory_state.memory_length;
+    g_memory_state.free_list->free = true;
+    g_memory_state.free_list->previous = NULL;
+    g_memory_state.free_list->next = NULL;
 
     return 0;
+}
+
+void* malloc(size_t size)
+{
+    size = align(size, sizeof(void*));
+    MemoryHeader* region = find_free(size);
+    if (region == NULL) return NULL; //buy more ram LOL
+
+    split_region(region, size);
+    region->free = false;
+    remove_region_from_free_list(region);
+
+    return offset_region_by_header(region);
+}
+
+void free(void* addr)
+{
+    MemoryHeader* region = get_region_header(addr);
+    MemoryHeader* free_list_entry = g_memory_state.free_list;
+
+    while ((uintptr_t)free_list_entry < (uintptr_t)region)
+    {
+        if (free_list_entry->next == NULL) break;
+        free_list_entry = free_list_entry->next;
+    }
+
+    region->free = true;
+
+    //become the new head
+    if (free_list_entry->previous == NULL)
+    {
+        region->next = free_list_entry;
+        free_list_entry->previous = region;
+        g_memory_state.free_list = region;
+    }
+    //become the new tail
+    else if ((uintptr_t)region > (uintptr_t)free_list_entry)
+    {
+        region->previous = free_list_entry;
+        free_list_entry->next = region;
+    }
+    else
+    {
+        region->next = free_list_entry;
+        region->previous = free_list_entry->previous;
+        free_list_entry->previous = region;
+        region->previous->next = region;
+    }
 }

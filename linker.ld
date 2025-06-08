@@ -56,4 +56,6 @@ SECTIONS
     section” and “place it into /DISCARD/,” which actually means “throw it away.” 
     Same for *(.eh_frame). */
     /DISCARD/ : { *(.comment) *(.eh_frame) }
+
+    _end = .;
 }
