@@ -29,7 +29,7 @@ void multiboot_memory_map_print(uint32_t mmap_length, uint32_t mmap_addr_phys)
 
 void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 {
-	term_set_color(VGA_WHITE, VGA_BLACK);
+	term_set_color(VGA_WHITE, VGA_PURPLE);
     term_clear();
 	term_set_cursor_blink(0);
 
