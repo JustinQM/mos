@@ -180,3 +180,22 @@ void free(void* addr)
         region->previous->next = region;
     }
 }
+
+void memory_free_list_print(void)
+{
+    MemoryHeader* free_list_entry = g_memory_state.free_list;
+    int i = 0;
+    printf("Free List\n");
+    while (free_list_entry)
+    {
+        printf("Entry %d\n",i);
+        printf("Address: %d\n",free_list_entry);
+        printf("Size: %d\n",free_list_entry->size);
+        printf("Previous: %d\n",free_list_entry->previous);
+        printf("Next: %d\n",free_list_entry->next);
+        printf("\n");
+
+        i++;
+        free_list_entry = free_list_entry->next;
+    }
+}

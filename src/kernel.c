@@ -61,6 +61,8 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
     free(test);
     free(test2);
 
+    memory_free_list_print();
+
     printf("No Errors\n");
 
     //die

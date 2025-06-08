@@ -10,4 +10,6 @@ uint32_t memory_init(MultibootInfo* mb_info);
 void* malloc(size_t size);
 void free(void* addr);
 
+void memory_free_list_print(void);
+
 #endif //MEMORY_H
