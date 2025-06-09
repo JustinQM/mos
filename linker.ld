@@ -6,27 +6,26 @@ MEMORY
     KERNEL (rx): ORIGIN = 0x00100000, LENGTH = 16M
 }
 
+PHDRS
+{
+    boot PT_LOAD FLAGS (r);
+    text PT_LOAD;
+    data PT_LOAD;
+}
+
 SECTIONS
 {
     .multiboot ALIGN(4):
     {
         KEEP(*(.multiboot)) /* KEEP: Forces the linker to keep this section */
-    } > BOOT
+    } > BOOT : boot
 
-    .text : /* can't have align here or else it does not jump to the kernel memory region */
-    {
-        *(.text*) 
-    } > KERNEL 
+    .text : { *(.text*) } > KERNEL : text
+    .rodata ALIGN(16): { *(.rodata*) } > KERNEL : text
+    .gdt : { *(.gdt*) } > KERNEL : text
 
-    .rodata ALIGN(4): 
-    {
-        *(.rodata*)
-    }
+    .data ALIGN(16): { *(.data*) } > KERNEL : data
 
-    .data ALIGN(4):
-    {
-        *(.data*)
-    }
 
     .bss ALIGN(16):
     {
@@ -38,7 +37,7 @@ SECTIONS
         The linker lumps all COMMON symbols into .bss by default.*/
         *(COMMON)
         __bss_end = .;
-    }
+    } > KERNEL : data
 
     /* chatgpt explanation of /DISCARD/ */
     /* This is a special output section name. Literally the keyword DISCARD in 

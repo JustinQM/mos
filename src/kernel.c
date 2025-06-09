@@ -19,6 +19,8 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
     printf("MOS 0.1.2\n");
     printf("By Justin O'Reilly and Connor Ashcroft\n");
 
+    char buf[256*30] = "a"; //stack test
+
     if (multiboot_magic != MULTIBOOT_MAGIC) 
     {
         printf("Invalid Multiboot Magic. Got: %d and expected: %d", multiboot_magic, MULTIBOOT_MAGIC);
