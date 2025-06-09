@@ -5,11 +5,19 @@
 #include "multiboot.h"
 #include "io.h"
 #include "memory.h"
+#include "helpers.h"
+#include "vga.h"
+
 
 void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 {
-    terminal_setcolor(15, 1); //fg white bg blue
-    terminal_clear();
+    term_set_color(VGA_WHITE, VGA_PURPLE);
+    term_clear();
+    term_set_cursor_blink(0);
+
+    term_set_fg_color(VGA_YELLOW);
+    printf("MOS 0.1.2\n");
+    printf("By Justin O'Reilly and Connor Ashcroft\n");
 
     if (multiboot_magic != MULTIBOOT_MAGIC) 
     {
@@ -27,12 +35,6 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 
     int* test = malloc(sizeof(int) * 64);
     int* test2 = malloc(sizeof(int) * 64);
-
-    /*if (test2 == NULL)
-    {
-        printf("oh shit\n");
-        return;
-    }*/
 
     printf("Test Address: %d\n", test);
 
@@ -65,7 +67,9 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 
     printf("No Errors\n");
 
-    //die
+    term_set_bg_color(VGA_GREEN);
+    printf("success");
+
     while (1)
     {
         __asm__("hlt");

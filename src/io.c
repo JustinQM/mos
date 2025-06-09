@@ -1,74 +1,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include <stddef.h>
-
-/*
- * VGA text‐mode buffer starts at physical 0xB8000.
- * Each “cell” is two bytes:
- *   byte[0] = ASCII code,
- *   byte[1] = color (high nibble = background, low nibble = foreground).
- */
-
-#define VGA_ADDR ((volatile uint8_t*)0xB8000)
-#define VGA_WIDTH 80
-#define VGA_HEIGHT 25
-
-static uint8_t terminal_color = 0x07; //default
-static size_t terminal_row = 0;
-static size_t terminal_col = 0;
-
-//Combine the fg and bg into one byte
-void terminal_setcolor(uint8_t fg, uint8_t bg)
-{
-    terminal_color = (bg << 4 ) | (fg & 0x0F);
-}
-
-static void terminal_newline(void)
-{
-    terminal_col = 0;
-    terminal_row++;
-    if (terminal_row >= VGA_HEIGHT)
-    {
-        //TODO: Introduce wrapping or scrolling
-        terminal_row = 0;
-    }
-}
-
-static void terminal_putchar(char c)
-{
-    if (c == '\n')
-    {
-        terminal_newline();
-        return;
-    }
-
-    //check boundaries
-    if ((unsigned)terminal_col >= VGA_WIDTH)
-    {
-        terminal_newline();
-    }
-
-    size_t i = (terminal_row * VGA_WIDTH + terminal_col) * 2;
-    VGA_ADDR[i] = (uint16_t)c;
-    VGA_ADDR[i + 1] = terminal_color;
-    terminal_col++;
-}
-
-static void terminal_write(const char* data, size_t len)
-{
-    for (size_t i = 0; i < len; i++)
-    {
-        terminal_putchar(data[i]);
-    }
-}
-
-void terminal_clear(void)
-{
-    for (size_t i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++)
-    {
-        terminal_putchar('\0');
-    }
-}
+#include "vga.h"
 
 // naive strlen since we don't have libc
 static size_t strlen(const char* string)
@@ -90,7 +23,7 @@ static void itoa(uint32_t value)
     int pos = 0;
     if (value == 0)
     {
-        terminal_putchar('0');
+        term_put_char('0');
         return;
     }
 
@@ -103,13 +36,8 @@ static void itoa(uint32_t value)
     //buffer is backwards, write in reverse order
     for (int i = pos - 1; i >= 0; i--)
     {
-        terminal_putchar(buf[i]);
+        term_put_char(buf[i]);
     }
-}
-
-static void terminal_writestring(const char* string)
-{
-    terminal_write(string, strlen(string));
 }
 
 //very bad printf since we don't have libc
@@ -126,7 +54,7 @@ void printf(const char* format, ...)
             if (*p == 's')
             {
                 const char* string = va_arg(args, const char*);
-                terminal_writestring(string);
+                term_write(string);
             }
             else if (*p == 'd')
             {
@@ -135,18 +63,18 @@ void printf(const char* format, ...)
             }
             else if (*p == '%')
             {
-                terminal_putchar('%');
+                term_put_char('%');
             }
             else //unreconized specifier
             {
                 //TODO: Make this an error
-                terminal_putchar('%');
-                terminal_putchar(*p);
+                term_put_char('%');
+                term_put_char(*p);
             }
         }
         else
         {
-            terminal_putchar(*p);
+            term_put_char(*p);
         }
     }
     va_end(args);
