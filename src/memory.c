@@ -73,6 +73,28 @@ static void remove_region_from_free_list(MemoryHeader* region)
     region->next = NULL;
 }
 
+//scans the free list in the global memory state 
+//for regions that can be coalesced
+static void coalesce(void)
+{
+    MemoryHeader* current = g_memory_state.free_list;
+
+    while (current && current->next)
+    {
+        uint8_t* current_end = (uint8_t*)current + current->size + sizeof(MemoryHeader);
+        if (current_end == current->next)
+        {
+            current->size += sizeof(MemoryHeader) + current->next->size;
+            if (current->next->next) current->next->next->previous = current;
+            current->next = current->next->next;
+        }
+        else
+        {
+            current = current->next;
+        }
+    }
+}
+
 static void* offset_region_by_header(MemoryHeader* region)
 {
     return (void*)((uint8_t*)region + sizeof(MemoryHeader));
@@ -179,6 +201,9 @@ void free(void* addr)
         free_list_entry->previous = region;
         region->previous->next = region;
     }
+
+    //check to see if we can coalesce conttiguous regions
+    coalesce();
 }
 
 void memory_free_list_print(void)

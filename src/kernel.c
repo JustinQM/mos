@@ -35,8 +35,7 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 
     int* test = malloc(sizeof(int) * 64);
     int* test2 = malloc(sizeof(int) * 64);
-
-    printf("Test Address: %d\n", test);
+    int* test3 = malloc(sizeof(int) * 1024);
 
     for (int i = 0; i < 64; i++)
     {
@@ -44,24 +43,9 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
         test2[i] = 64-i;
     }
 
-    for (int i = 0; i < 64; i++)
-    {
-        printf("%d ", test[i]);
-    }
-
-    printf("\n");
-
-    printf("Test 2 Address: %d\n", test2);
-
-    for (int i = 0; i < 64; i++)
-    {
-        printf("%d ", test2[i]);
-    }
-
-    printf("\n");
-
     free(test);
-    free(test2);
+    //free(test2);
+    free(test3);
 
     memory_free_list_print();
 
