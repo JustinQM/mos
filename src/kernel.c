@@ -17,11 +17,9 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
     term_set_cursor_blink(0);
 
     term_set_fg_color(VGA_YELLOW);
-    printf("MOS 0.1.2\n");
+    printf("MOS 0.1.2? at least 2\n");
     printf("By Justin O'Reilly and Connor Ashcroft\n");
 	term_set_fg_color(VGA_WHITE);
-
-    char buf[256*30] = "a"; //stack test
 
     if (multiboot_magic != MULTIBOOT_MAGIC) 
     {
@@ -51,18 +49,39 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 	}
 
 	printf("found! %d and %d\n", prim_base, sec_base);
-	//const char* buf = "Hello world!";
-	// char buf[256] = "Hello world!";
-	// ata_write_sector0(prim_base, 0, buf);	
+
+	printf("identifying drives\n");
+	int16_t ident_buffer[256];
+
+	int ident_fail = ata_identify(prim_base, 0, ident_buffer);
+	if (ident_fail)
+	{
+		printf("couldn't identify primary drive 0\n");
+		return;
+	}
+
+	ATAIdentifyDeviceInfo* ident_info = (ATAIdentifyDeviceInfo*)ident_buffer;
+	ata_fix_ident_info(ident_info);
+	printf("hey guess what %s\n", &ident_info->model_number);
+
+	char buf[512] = "Hello world!";
+	// mark this as "bootable" just because :)
+	buf[510] = 0x55;
+	buf[511] = 0xAA;
+
+	// THE BELOW CODE WILL OVERWRITE THE MASTER BOOT RECORD OF THE HARD DRIVE CONNECTED
+	// WHICH ONE? I DON'T KNOW. ARE YOU FEELING LUCKY?
+	uint32_t target_lba = 0;
+	int result2 = ata_write_sector(prim_base, 0, target_lba, (uint8_t*)buf);
+	if (result2 == 0)
+	{
+		printf("success!\n");
+	}
+	else
+	{
+		term_set_fg_color(VGA_RED);
+		printf("FAILURE %d\n", result2);
+	}
 	
-	char buf1[256];
-	buf1[0] = 'a';
-	buf1[1] = '\0';
-
-	char buf2[256] = "a";
-	printf("done!");
-
-    term_set_bg_color(VGA_GREEN);
-    printf("success");
 
 }

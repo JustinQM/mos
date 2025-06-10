@@ -1,6 +1,17 @@
 #pragma once
 #include <stdint.h>
 
+typedef struct
+{
+	uint16_t general_config;
+	uint16_t __empty1[9];
+	char serial_number[20];
+	uint16_t __empty2[3];
+	char firmware_revision[8];
+	char model_number[40];
+	// do the rest later idk
+} ATAIdentifyDeviceInfo;
+
 uint32_t pci_conf_read(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset);
 
 int find_ide_controllers(uint16_t *base0, uint16_t *base1);
@@ -8,10 +19,11 @@ int find_ide_controllers(uint16_t *base0, uint16_t *base1);
 int ata_wait(uint16_t io_base);
 int ata_wait_drq(uint16_t io_base);
 
-int ata_write_sector0(uint16_t io_base, uint8_t drive, uint8_t *buf);
+int ata_write_sector(uint16_t io_base, uint8_t drive, uint32_t lba,  uint8_t *buf);
 
 // IDENTIFY one drive (drive = 0 for master, 1 for slave)
-int ata_identify(uint16_t io_base, uint8_t drive);
+int ata_identify(uint16_t io_base, uint8_t drive, uint16_t* out_buffer);
 
+void ata_fix_ident_info(ATAIdentifyDeviceInfo* info);
 
 
