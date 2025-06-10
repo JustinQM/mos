@@ -29,16 +29,13 @@ gdt_descriptor:
     dw gdt_end - gdt_start - 1         ; size-1
     dd gdt_start
 
-; create a 16KiB stack
-section .bss ; bss = reserve unitialized data without placing in binary
-align 16
-stack_bottom:
-resb 16384 ; resb = reserve bytes (similar to dd but without placing in binary)
-stack_top:
-
 ; get bss start and end from the linker
 extern __bss_start
 extern __bss_end
+
+; get stack locations from linker
+extern __start_bottom
+extern __stack_top
 
 section .text
 global _start:function (_start.end - _start)
@@ -73,7 +70,8 @@ _start:
     push  ax              ; reload SS safely
     pop   ss
 
-    lea esp, [stack_top] ; init the stack
+    lea esp, __stack_top ; init the stack
+    lea ebp, __stack_top
     and   esp, 0xFFFFFFF0 ; align the stack by clearing the low 4 bits
 
     ; declare and call kernel_main

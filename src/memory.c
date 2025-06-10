@@ -82,7 +82,7 @@ static void coalesce(void)
     while (current && current->next)
     {
         uint8_t* current_end = (uint8_t*)current + current->size + sizeof(MemoryHeader);
-        if (current_end == current->next)
+        if (current_end == (uint8_t*)current->next)
         {
             current->size += sizeof(MemoryHeader) + current->next->size;
             if (current->next->next) current->next->next->previous = current;
@@ -223,4 +223,16 @@ void memory_free_list_print(void)
         i++;
         free_list_entry = free_list_entry->next;
     }
+}
+
+void* memset(void* dest, uint8_t value, size_t length)
+{
+    if (length != 0)
+    {
+        uint8_t* ptr = dest;
+        do
+            *ptr++ = value;
+        while (--length != 0);
+    }
+    return (void*)dest;
 }

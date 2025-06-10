@@ -4,6 +4,7 @@ MEMORY
 {
     BOOT (r)   : ORIGIN = 0x00000000, LENGTH = 4K
     KERNEL (rx): ORIGIN = 0x00100000, LENGTH = 16M
+    STACK (rw) : ORIGIN = 0x01100000, LENGTH = 512M
 }
 
 PHDRS
@@ -38,6 +39,13 @@ SECTIONS
         *(COMMON)
         __bss_end = .;
     } > KERNEL : data
+
+    .stack ALIGN(16) (NOLOAD):
+    {
+        __stack_bottom = .;
+        . = . + 512M;
+        __stack_top = .;
+    } > STACK
 
     /* chatgpt explanation of /DISCARD/ */
     /* This is a special output section name. Literally the keyword DISCARD in 
