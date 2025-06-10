@@ -43,9 +43,9 @@ void term_scroll(int32_t lines)
 {
 	for (size_t dest_row = 0; dest_row < VGA_HEIGHT; dest_row++)
 	{
-		size_t src_row = dest_row + lines;
-		bool is_empty = src_row < 0 || src_row >= VGA_HEIGHT;
-		for (size_t col = 0; col < VGA_WIDTH; col++)
+		int32_t src_row = dest_row + lines;
+                bool is_empty = src_row < 0 || src_row >= VGA_HEIGHT;
+		for (int32_t col = 0; col < VGA_WIDTH; col++)
 		{
 			size_t addr = VEC2INT(col, dest_row)*2;
 			if (is_empty)
