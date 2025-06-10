@@ -14,16 +14,28 @@ align 4
     dd MBFLAGS
     dd CHECKSUM
 
-; create a 16KiB stack
-section .bss ; bss = reserve unitialized data without placing in binary
-align 16
-stack_bottom:
-resb 16384 ; resb = reserve bytes (similar to dd but without placing in binary)
-stack_top:
+section .gdt
+gdt_start:
+    dq 0                               ; null descriptor
+
+    ; code segment: base=0, limit=0xFFFFF, G=1, D=1, executable, read
+    dq 0x00CF9A000000FFFF              ; flag bits set for 4 KiB pages
+
+    ; data segment: base=0, limit=0xFFFFF, G=1, D=1, read/write
+    dq 0x00CF92000000FFFF
+gdt_end:
+
+gdt_descriptor:
+    dw gdt_end - gdt_start - 1         ; size-1
+    dd gdt_start
 
 ; get bss start and end from the linker
 extern __bss_start
 extern __bss_end
+
+; get stack locations from linker
+extern __start_bottom
+extern __stack_top
 
 section .text
 global _start:function (_start.end - _start)
@@ -31,10 +43,16 @@ _start:
     cmp eax, 0x2BADB002 ; make sure multiboot passed the memory map
     jne .hang ; TODO: make error if multiboot fails to pass mmap
 
-    mov esp, stack_top ; init the stack
+    lgdt  [gdt_descriptor] ; load the GDT
 
-    ; this area is for critical processor initalization
-    ; before the kernel is entered
+    jmp   0x08:.protected
+
+.protected:
+    ; enable sse optimizations
+    mov   eax, cr4
+    or    eax, (1 << 9)          ; OSFXSR
+    or    eax, (1 << 10)         ; OSXMMEXCPT (optional)
+    mov   cr4, eax
 
     ; zero out bss
     xor eax, eax
@@ -43,9 +61,19 @@ _start:
     sub ecx, edi
     rep stosb ; write AL (0) to [EDI] ECX times
 
-    ; ending here
+    mov   ax, 0x10        ; flat data selector
+    mov   ds, ax
+    mov   es, ax
+    mov   fs, ax
+    mov   gs, ax
 
-    
+    push  ax              ; reload SS safely
+    pop   ss
+
+    lea esp, __stack_top ; init the stack
+    lea ebp, __stack_top
+    and   esp, 0xFFFFFFF0 ; align the stack by clearing the low 4 bits
+
     ; declare and call kernel_main
     push ebx
     push 0x2BADB002

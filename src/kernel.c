@@ -21,6 +21,8 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
     printf("By Justin O'Reilly and Connor Ashcroft\n");
 	term_set_fg_color(VGA_WHITE);
 
+    char buf[256*30] = "a"; //stack test
+
     if (multiboot_magic != MULTIBOOT_MAGIC) 
     {
         printf("Invalid Multiboot Magic. Got: %d and expected: %d", multiboot_magic, MULTIBOOT_MAGIC);
@@ -49,10 +51,6 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 	}
 
 	printf("found! %d and %d\n", prim_base, sec_base);
-	
-
-
-
 	//const char* buf = "Hello world!";
 	// char buf[256] = "Hello world!";
 	// ata_write_sector0(prim_base, 0, buf);	
@@ -63,5 +61,8 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 
 	char buf2[256] = "a";
 	printf("done!");
-	 
+
+    term_set_bg_color(VGA_GREEN);
+    printf("success");
+
 }
