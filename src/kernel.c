@@ -8,7 +8,6 @@
 #include "helpers.h"
 #include "vga.h"
 
-
 void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 {
     term_set_color(VGA_WHITE, VGA_PURPLE);
@@ -20,6 +19,7 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
     printf("By Justin O'Reilly and Connor Ashcroft\n");
 
     char buf[256*30] = "a"; //stack test
+    printf("%s", buf);
 
     if (multiboot_magic != MULTIBOOT_MAGIC) 
     {
