@@ -8,7 +8,6 @@
 #include "helpers.h"
 #include "vga.h"
 
-
 void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 {
     term_set_color(VGA_WHITE, VGA_PURPLE);
