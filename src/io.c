@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include "vga.h"
 
+/* TODO: Move this function to string.h when made
 // naive strlen since we don't have libc
 static size_t strlen(const char* string)
 {
@@ -14,6 +15,7 @@ static size_t strlen(const char* string)
 
     return len;
 }
+*/
 
 // naive itoa since we don't have libc
 //TODO: Use heap memory to return a buffer instead of just printing to the console

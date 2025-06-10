@@ -65,7 +65,11 @@ qemu: all
 	if [ ! -f $(BUILD_DIR)/image.img ]; then \
 		qemu-img create $(BUILD_DIR)/image.img 4G; \
 	fi
-	qemu-system-i386 -cdrom $(BUILD_DIR)/mos.iso -boot d -display sdl -drive file=$(BUILD_DIR)/image.img,if=ide,format=raw -m 2G
+	qemu-system-i386 -cdrom $(BUILD_DIR)/mos.iso \
+		-boot d \
+	   	-display sdl \
+		-drive file=$(BUILD_DIR)/image.img,if=ide,format=raw \
+		-m 2G
 
 .PHONY: qemu-debug
 qemu-debug:
@@ -76,5 +80,9 @@ qemu-debug:
 	if [ ! -f $(BUILD_DIR)/image.img ]; then \
 		qemu-img create $(BUILD_DIR)/image.img 4G; \
 	fi
-	qemu-system-i386 -s -S -cdrom $(BUILD_DIR)/mos.iso -boot d -display sdl -display sdl -drive file=$(BUILD_DIR)/image.img,if=ide,format=raw -m 2G &
+	qemu-system-i386 -s -S -cdrom $(BUILD_DIR)/mos.iso \
+	-boot d \
+	-display sdl \
+	-drive file=$(BUILD_DIR)/image.img,if=ide,format=raw \
+	-m 2G &
 	gdb $(BUILD_DIR)/kernel.bin -ex "target remote localhost:1234"
