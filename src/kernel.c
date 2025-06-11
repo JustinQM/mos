@@ -7,9 +7,12 @@
 #include "memory.h"
 #include "helpers.h"
 #include "vga.h"
+#include "idt.h"
+#include "error.h"
 
 void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 {
+    init_idt();
     term_set_color(VGA_WHITE, VGA_PURPLE);
     term_clear();
     term_set_cursor_blink(0);
@@ -17,9 +20,6 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
     term_set_fg_color(VGA_YELLOW);
     printf("MOS 0.1.2\n");
     printf("By Justin O'Reilly and Connor Ashcroft\n");
-
-    char buf[256*30] = "a"; //stack test
-    printf("%s", buf);
 
     if (multiboot_magic != MULTIBOOT_MAGIC) 
     {
@@ -35,22 +35,9 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
         return;
     }
 
-    int* test = malloc(sizeof(int) * 64);
-    int* test2 = malloc(sizeof(int) * 64);
-    int* test3 = malloc(sizeof(int) * 1024);
+    // -- TESTING GROUNDS
 
-    for (int i = 0; i < 64; i++)
-    {
-        test[i] = i;
-        test2[i] = 64-i;
-    }
-
-    free(test);
-    //free(test2);
-    free(test3);
-
-    memory_free_list_print();
-
+    panic("OH SHIT");
     printf("No Errors\n");
 
     term_set_bg_color(VGA_GREEN);
