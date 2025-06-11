@@ -53,7 +53,9 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 	printf("identifying drives\n");
 	int16_t ident_buffer[256];
 
-	int ident_fail = ata_identify(prim_base, 0, ident_buffer);
+	ATADevice device = {prim_base, 0};
+
+	int ident_fail = ata_identify(device, ident_buffer);
 	if (ident_fail)
 	{
 		printf("couldn't identify primary drive 0\n");
@@ -64,24 +66,33 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 	ata_fix_ident_info(ident_info);
 	printf("hey guess what %s\n", &ident_info->model_number);
 
-	char buf[512] = "Hello world!";
-	// mark this as "bootable" just because :)
-	buf[510] = 0x55;
-	buf[511] = 0xAA;
-
-	// THE BELOW CODE WILL OVERWRITE THE MASTER BOOT RECORD OF THE HARD DRIVE CONNECTED
-	// WHICH ONE? I DON'T KNOW. ARE YOU FEELING LUCKY?
-	uint32_t target_lba = 0;
-	int result2 = ata_write_sector(prim_base, 0, target_lba, (uint8_t*)buf);
-	if (result2 == 0)
+	if (0)
 	{
-		printf("success!\n");
+		char buf[512*3] = "The quick brown fox jumps over the lazy dog";
+		memset((void*)(buf+44), 0x69, 512*3-45);
+		int result_write = ata_write_sectors(device, 0, 3, buf);
+		if (result_write)
+		{
+			printf("Error writing\n");
+		}
+		else
+		{
+			printf("Successful write!\n");
+		}
 	}
 	else
 	{
-		term_set_fg_color(VGA_RED);
-		printf("FAILURE %d\n", result2);
+		char buf[512];
+		int result_read = ata_read_sectors(device, 1, 1, buf);
+		if (result_read)
+		{
+			printf("Error reading\n");
+		}
+		else
+		{
+			printf("Successful read!\n");
+			printf("%s<EOF>\n", buf);
+		}
 	}
-	
 
 }

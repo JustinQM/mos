@@ -50,21 +50,21 @@ int find_ide_controllers(uint16_t *base0, uint16_t *base1)
 }
 
 // Wait until BSY is clear or timeout
-int ata_wait(uint16_t io_base)
+int ata_wait(ATADevice device)
 {
 	for (int i = 0; i < 100000; i++)
 	{
-		uint8_t status = inb(io_base + 7);
+		uint8_t status = inb(device.io_base + 7);
 		if (!(status & 0x80)) return 0;  // BSY cleared
 	}
 	return -1;
 }
 
-int ata_wait_drq(uint16_t io_base)
+int ata_wait_drq(ATADevice device)
 {
 	for (int i = 0; i < 100000; i++)
 	{
-		uint8_t status = inb(io_base + 7);
+		uint8_t status = inb(device.io_base + 7);
 		if (status & 0x08) // DRQ set
 			return 0;
 		if (status & 0x01) // error
@@ -74,28 +74,28 @@ int ata_wait_drq(uint16_t io_base)
 }
 
 // IDENTIFY one drive (drive = 0 for master, 1 for slave)
-int ata_identify(uint16_t io_base, uint8_t drive, uint16_t* out_buffer)
+int ata_identify(ATADevice device, uint16_t* out_buffer)
 {
 	// select drive
-	outb(io_base + 6, 0xA0 | (drive<<4));
-	outb(io_base + 7, 0xEC);
+	outb(device.io_base + 6, 0xA0 | (device.drive<<4));
+	outb(device.io_base + 7, 0xEC);
 	
-	if (ata_wait(io_base)) return -1; // wait for BSY clear
+	if (ata_wait(device)) return -1; // wait for BSY clear
 
-	uint8_t status = inb(io_base + 7);
+	uint8_t status = inb(device.io_base + 7);
 	if (status == 0)
 	{
 		// no device
 		return -1;
 	}
 	
-	if (ata_wait_drq(io_base)) return -1; // wait for DRQ
+	if (ata_wait_drq(device)) return -1; // wait for DRQ
 
 	// Drive exists and responded—normally you'd now read 256 words from data port.
 
 	for (int i = 0; i < 256; i++)
 	{
-		out_buffer[i] = inw(io_base + 0);
+		out_buffer[i] = inw(device.io_base + 0);
 	}
 
 	return 0;
@@ -111,33 +111,61 @@ int ata_identify(uint16_t io_base, uint8_t drive, uint16_t* out_buffer)
  * @buf       Pointer to a 512-byte buffer (must be word-aligned)
  * @return		0 on success, -1 on failure
  */
-int ata_write_sector(uint16_t io_base, uint8_t drive, uint32_t lba, uint8_t* buf)
+int ata_write_sectors(ATADevice device, uint32_t lba, uint8_t sectors, uint8_t* buf)
 {
-	if (lba > 0x0FFFFFFF) return 1;
-	if (ata_wait(io_base)) return 2;
+	if (sectors == 0) sectors = 256;
+	if (lba > 0x0FFFFFFF) return -1;
+	if (ata_wait(device)) return -1;
 
 	// Select the drive and upper 4 bits of the LBA
-	uint8_t head = 0xE0 | (drive << 4) | ((lba >>24) & 0x0F);
-	outb(io_base + 6, head);
+	uint8_t head = 0xE0 | (device.drive << 4) | ((lba >>24) & 0x0F);
+	outb(device.io_base + 6, head);
 
-	outb(io_base + 2, 1);					// Sector count = 1
-	outb(io_base + 3, lba & 0xFF);			// LBA bits 0-7
-	outb(io_base + 4, (lba >> 8) & 0xFF);	// LBA bits 8-15
-	outb(io_base + 5, (lba >> 16) & 0xFF);	// LBA bits 16-23
+	outb(device.io_base + 2, sectors);				// Sector count = 1
+	outb(device.io_base + 3, lba & 0xFF);			// LBA bits 0-7
+	outb(device.io_base + 4, (lba >> 8) & 0xFF);	// LBA bits 8-15
+	outb(device.io_base + 5, (lba >> 16) & 0xFF);	// LBA bits 16-23
 
-	outb(io_base + 7, 0x30); // WRITE SECTOR command
+	outb(device.io_base + 7, 0x30); // WRITE SECTOR(S) command
 
-	if (ata_wait_drq(io_base)) return 3;
 
-	for (int i = 0; i < 256; i++)
+	for (int i = 0; i < 256*sectors; i++)
 	{
+		if (i % 256 == 0 && ata_wait_drq(device)) return -1;
 		uint16_t word = ((uint16_t*)buf)[i];
-		outw(io_base + 0, word);
+		outw(device.io_base + 0, word);
 	}
 
 	// flush the cache
-	outb(io_base + 7, 0xE7);
-	ata_wait(io_base);
+	outb(device.io_base + 7, 0xE7);
+	ata_wait(device);
+
+	return 0;
+}
+
+int ata_read_sectors(ATADevice device, uint32_t lba, uint8_t sectors, uint8_t* buf)
+{
+	if (sectors == 0) sectors = 256;
+	if (lba > 0x0FFFFFFF) return -1;
+	if (ata_wait(device)) return -1;
+
+	uint8_t head = 0xE0 | (device.drive << 4) | ((lba >> 24) & 0x0F);
+	outb(device.io_base + 6, head);
+
+	outb(device.io_base + 2, sectors);
+	outb(device.io_base + 3, lba & 0xFF);
+	outb(device.io_base + 4, (lba >> 8) & 0xFF);
+	outb(device.io_base + 5, (lba >> 16) & 0xFF);
+
+	outb(device.io_base + 7, 0x20); // READ SECTOR(S) command
+	for (int i = 0; i < 256*sectors; i++)
+	{
+		if (i % 256 == 0 && ata_wait_drq(device)) return -1;
+		((uint16_t*)buf)[i] = inw(device.io_base + 0);
+	}
+
+	outb(device.io_base + 7, 0xE7);
+	ata_wait(device);
 
 	return 0;
 }
