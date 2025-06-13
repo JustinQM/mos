@@ -2,8 +2,8 @@
 #include <stdint.h>
 /*
  * TODO roadmap:
- * 1. write to mass storage
- * 2. read from mass storage
+ * DONE 1. write to mass storage
+ * DONE 2. read from mass storage
  * 3. see if there's any pitfalls or unexpected stuff we might encounter on real media?? like bad sectors, failures to read/write, etc
  * 4. implement filesystem based off how we interface with mass storage
  * 5. figure out partitioning or how to get GRUB on mass storage??
