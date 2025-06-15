@@ -9,10 +9,14 @@
 #include "vga.h"
 #include "drive.h"
 
+#include "idt.h"
+#include "error.h"
+
 void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 {
 
-    term_set_color(VGA_WHITE, VGA_BLACK);
+    init_idt();
+    term_set_color(VGA_WHITE, VGA_PURPLE);
     term_clear();
     term_set_cursor_blink(0);
 
