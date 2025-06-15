@@ -56,5 +56,4 @@ void term_set_cursor_blink(uint8_t is_blinking);
 
 void term_clear();
 
-
-
+void earlyprintf(const char* format, ...);

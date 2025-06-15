@@ -21,14 +21,3 @@ uint32_t multiboot_memory_map_load(uint32_t mmap_length, uint32_t mmap_addr, MMA
 
     return count;
 }
-
-void multiboot_memory_map_print(MMAPInfo* mmap_info, uint32_t length) 
-{
-    for(uint32_t i = 0; i < length; i++)
-    {
-        printf("  size      = %d\n", mmap_info[i].size);
-        printf("  base_addr = %d\n", mmap_info[i].base_addr);
-        printf("  length    = %d\n", mmap_info[i].length);
-        printf("  type      = %d\n\n", mmap_info[i].type);
-    }
-}

@@ -9,7 +9,7 @@ extern void panic_end();
 #define panic(fmt, ...)                     \
     do {                                           \
         panic_start();                      \
-        printf("PANIC: " fmt, ##__VA_ARGS__); \
+        earlyprintf("PANIC: " fmt, ##__VA_ARGS__); \
         panic_end();                      \
     } while (0)
 

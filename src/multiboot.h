@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 
-#include "io.h"
-
 #define MULTIBOOT_MAGIC 0x2BADB002 
 
 /* 
@@ -148,7 +146,5 @@ typedef struct __attribute__((packed))
 //buf -> Address to store the information
 //returns -> amount of elements that were added to buf
 uint32_t multiboot_memory_map_load(uint32_t mmap_length, uint32_t mmap_addr, MMAPInfo* buf);
-
-void multiboot_memory_map_print(MMAPInfo* mmap_info, uint32_t length);
 
 #endif //MULTIBOOT_H

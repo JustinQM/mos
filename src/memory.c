@@ -1,6 +1,6 @@
 #include "memory.h"
 
-#include "io.h"
+#include "vga.h"
 
 #define MMAP_BUFFER_SIZE 256
 
@@ -114,7 +114,7 @@ uint32_t memory_init(MultibootInfo* mb_info)
     //memory flags not set
     if (!((mb_info->flags) & (1 << 6)) || !(mb_info->flags & (1 << 0)))
     {
-        printf("Mutliboot memory flags not set (1 << 0 && 1 << 6). Got: %d", mb_info->flags);
+        earlyprintf("Mutliboot memory flags not set (1 << 0 && 1 << 6). Got: %d", mb_info->flags);
         return 1;
     }
 
@@ -124,7 +124,7 @@ uint32_t memory_init(MultibootInfo* mb_info)
 
     if (mmap_info_length <= 0)
     {
-        printf("Could not load mmap_info pairs. Got %d pairs\n", mmap_info_length);
+        earlyprintf("Could not load mmap_info pairs. Got %d pairs\n", mmap_info_length);
         return 1;
     }
 
@@ -204,25 +204,6 @@ void free(void* addr)
 
     //check to see if we can coalesce conttiguous regions
     coalesce();
-}
-
-void memory_free_list_print(void)
-{
-    MemoryHeader* free_list_entry = g_memory_state.free_list;
-    int i = 0;
-    printf("Free List\n");
-    while (free_list_entry)
-    {
-        printf("Entry %d\n",i);
-        printf("Address: %d\n",free_list_entry);
-        printf("Size: %d\n",free_list_entry->size);
-        printf("Previous: %d\n",free_list_entry->previous);
-        printf("Next: %d\n",free_list_entry->next);
-        printf("\n");
-
-        i++;
-        free_list_entry = free_list_entry->next;
-    }
 }
 
 void* memset(void* dest, uint8_t value, size_t length)

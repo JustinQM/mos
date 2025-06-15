@@ -1,6 +1,8 @@
 #include "vga.h"
 #include "helpers.h"
 
+#include <stdarg.h>
+
 #define VEC2INT(x, y) (x+y*VGA_WIDTH)
 typedef struct
 {
@@ -143,4 +145,67 @@ void term_clear()
 	term_set_cursor_pos(0, 0);
 }
 
+// naive itoa since we don't have libc
+//TODO: Use heap memory to return a buffer instead of just printing to the console
+static void itoa(uint32_t value)
+{
+    char buf[16];
+    int pos = 0;
+    if (value == 0)
+    {
+        term_put_char('0');
+        return;
+    }
 
+    while (value > 0)
+    {
+        buf[pos++] = '0' + (value % 10);
+        value = value / 10;
+    }
+
+    //buffer is backwards, write in reverse order
+    for (int i = pos - 1; i >= 0; i--)
+    {
+        term_put_char(buf[i]);
+    }
+}
+
+//vga early printf used for pre-gop reporting
+void earlyprintf(const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    for (const char* p = format; *p; p++)
+    {
+        if (*p == '%')
+        {
+            p++;
+            if (*p == 's')
+            {
+                const char* string = va_arg(args, const char*);
+                term_write(string);
+            }
+            else if (*p == 'd')
+            {
+                uint32_t d = va_arg(args, uint32_t);
+                itoa(d);
+            }
+            else if (*p == '%')
+            {
+                term_put_char('%');
+            }
+            else //unreconized specifier
+            {
+                //TODO: Make this an error
+                term_put_char('%');
+                term_put_char(*p);
+            }
+        }
+        else
+        {
+            term_put_char(*p);
+        }
+    }
+    va_end(args);
+}

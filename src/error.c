@@ -3,7 +3,6 @@
 #include <stdint.h>
 
 #include "idt.h"
-#include "io.h"
 #include "vga.h"
 
 #define INDEX_TO_VEC  0

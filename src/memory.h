@@ -11,6 +11,4 @@ void* malloc(size_t size);
 void free(void* addr);
 void* memset(void* dest, uint8_t value, size_t length);
 
-void memory_free_list_print(void);
-
 #endif //MEMORY_H
