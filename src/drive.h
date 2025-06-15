@@ -23,7 +23,7 @@ typedef struct
 typedef struct
 {
 	uint16_t io_base;
-	uint8_t drive
+	uint8_t drive;
 } ATADevice;
 
 uint32_t pci_conf_read(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset);

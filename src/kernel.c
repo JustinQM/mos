@@ -11,6 +11,7 @@
 
 #include "idt.h"
 #include "error.h"
+#include "vslfs.h"
 
 void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 {
@@ -70,33 +71,10 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 	ata_fix_ident_info(ident_info);
 	printf("hey guess what %s\n", &ident_info->model_number);
 
-	if (0)
-	{
-		char buf[512*3] = "The quick brown fox jumps over the lazy dog";
-		memset((void*)(buf+44), 0x69, 512*3-45);
-		int result_write = ata_write_sectors(device, 0, 3, buf);
-		if (result_write)
-		{
-			printf("Error writing\n");
-		}
-		else
-		{
-			printf("Successful write!\n");
-		}
-	}
+	FSFileSystem* fs = fs_create_filesystem(device, 0, 8, 64, "My Beloved (:");
+	if (fs == NULL)
+		printf("Couldn't create filesystem!\n");
 	else
-	{
-		char buf[512];
-		int result_read = ata_read_sectors(device, 1, 1, buf);
-		if (result_read)
-		{
-			printf("Error reading\n");
-		}
-		else
-		{
-			printf("Successful read!\n");
-			printf("%s<EOF>\n", buf);
-		}
-	}
+		printf("successfully made FS!\n");
 
 }

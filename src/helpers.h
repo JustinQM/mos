@@ -37,42 +37,42 @@ static inline uint16_t inw(uint16_t port)
 	return ret;
 }
 
-static inline flag_get_u32(uint32_t x, unsigned pos)
+static inline int flag_get_u32(uint32_t x, unsigned pos)
 {
 	return (x >> pos) & 1;
 }
 
-static inline flag_set_u32(uint32_t* x, unsigned pos)
+static inline void flag_set_u32(uint32_t* x, unsigned pos)
 {
 	*x |= (1u << pos);
 }
 
-static inline flag_clear_u32(uint32_t* x, unsigned pos)
+static inline void flag_clear_u32(uint32_t* x, unsigned pos)
 {
 	*x &= ~(1 << pos);
 }
 
-static inline flag_toggle_u32(uint32_t* x, unsigned pos)
+static inline void flag_toggle_u32(uint32_t* x, unsigned pos)
 {
 	*x ^= (1 << pos);
 }
 
-static inline flag_get_u8(uint8_t x, unsigned pos)
+static inline int flag_get_u8(uint8_t x, unsigned pos)
 {
 	return (x >> pos) & 1;
 }
 
-static inline flag_set_u8(uint8_t* x, unsigned pos)
+static inline void flag_set_u8(uint8_t* x, unsigned pos)
 {
 	*x |= (1u << pos);
 }
 
-static inline flag_clear_u8(uint8_t* x, unsigned pos)
+static inline void flag_clear_u8(uint8_t* x, unsigned pos)
 {
 	*x &= ~(1 << pos);
 }
 
-static inline flag_toggle_u8(uint8_t* x, unsigned pos)
+static inline void flag_toggle_u8(uint8_t* x, unsigned pos)
 {
 	*x ^= (1 << pos);
 }
