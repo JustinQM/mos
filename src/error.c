@@ -46,7 +46,7 @@ void exception_dispatch(uint64_t* stack_frame) {
     regs.err_code = err;
 
     switch (vec) {
-        case 2: panic("Exception %d, Division by Zero, err=%d at %d", vec, err, regs.rip);
+        case 2: { panic("Exception %d, Division by Zero, err=%d at %d", vec, err, regs.rip); break;}
         default: panic("Exception %d, err=%d at %d", vec, err, regs.rip);
     }
 }

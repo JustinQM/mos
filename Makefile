@@ -7,12 +7,18 @@ LD       := ld
 # TODO: Make debug flags not always on
 DFLAGS   := -g -O0
 RFLAGS   := -O2
-CFLAGS   := -m32 -ffreestanding -fno-pic -fno-stack-protector -Wall -Wextra $(DFLAGS)
+CFLAGS   := -m64 -ffreestanding -fno-pic -fno-stack-protector -Wall -Wextra $(DFLAGS)
 DASFLAGS := -g -F dwarf
-ASFLAGS  := -f elf $(DASFLAGS)
+ASFLAGS  := -f elf64 $(DASFLAGS)
 
 # Linker flags (assumes you have a linker.ld in the project root)
-LDFLAGS  := -m elf_i386 -T linker.ld -nostdlib
+LDFLAGS  := -m elf_x86_64 -T linker.ld -nostdlib
+
+GRUB_MODULES := part_gpt part_msdos fat \
+                normal multiboot multiboot2 \
+                efi_gop efi_uga  \
+                gfxterm terminal \
+                loadenv configfile
 
 # Directories
 SRC_DIR   := src
@@ -55,34 +61,46 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.asm | $(BUILD_DIR)
 clean:
 	rm -rf $(BUILD_DIR)
 
-# Run the built kernel in QEMU (i386 multiboot)
-.PHONY: qemu
-qemu: all
+.PHONY: iso_setup
+iso_setup:
+	mkdir -p $(ISO_DIR)/EFI/BOOT
+	grub-mkstandalone --format=x86_64-efi \
+	--output=$(ISO_DIR)/EFI/BOOT/BOOTX64.efi \
+	--locales="" \
+	--fonts="" \
+        --modules="$(GRUB_MODULES)" \
+	"boot/grub/grub.cfg=$(ISO_DIR)/boot/grub/grub.cfg" \
+	"prefix=/EFI/BOOT"
+
 	mkdir -p $(ISO_DIR)/boot/grub
+
 	cp -f iso_grub.cfg $(ISO_DIR)/boot/grub/grub.cfg
 	cp -f $(BUILD_DIR)/kernel.bin $(ISO_DIR)/boot
-	grub-mkrescue -o $(BUILD_DIR)/mos.iso $(ISO_DIR)
+	grub-mkrescue -o $(BUILD_DIR)/mos.iso $(ISO_DIR) 
 	if [ ! -f $(BUILD_DIR)/image.img ]; then \
 		qemu-img create $(BUILD_DIR)/image.img 4G; \
 	fi
-	qemu-system-i386 -cdrom $(BUILD_DIR)/mos.iso \
+
+# Run the built kernel in QEMU 
+.PHONY: qemu
+qemu: all iso_setup
+	qemu-system-x86_64 -m 2G \
 	-boot d \
-	-display sdl \
 	-drive file=$(BUILD_DIR)/image.img,format=raw \
-	-m 2G \
+	-drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/x64/OVMF_CODE.4m.fd \
+	-drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/x64/OVMF_VARS.4m.fd \
+	-device virtio-vga \
+	-display sdl \
+        -cdrom $(BUILD_DIR)/mos.iso \
 
 .PHONY: qemu-debug
-qemu-debug:
-	mkdir -p $(ISO_DIR)/boot/grub
-	cp -f iso_grub.cfg $(ISO_DIR)/boot/grub/grub.cfg
-	cp -f $(BUILD_DIR)/kernel.bin $(ISO_DIR)/boot
-	grub-mkrescue -o $(BUILD_DIR)/mos.iso $(ISO_DIR)
-	if [ ! -f $(BUILD_DIR)/image.img ]; then \
-		qemu-img create $(BUILD_DIR)/image.img 4G; \
-	fi
-	qemu-system-i386 -s -S -cdrom $(BUILD_DIR)/mos.iso \
+qemu-debug: all iso_setup
+	qemu-system-x84_64 -s -S  -m 2G \
 	-boot d \
-	-display sdl \
 	-drive file=$(BUILD_DIR)/image.img,format=raw \
-	-m 2G &
+	-drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/x64/OVMF_CODE.4m.fd \
+	-drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/x64/OVMF_VARS.4m.fd \
+	-device virtio-vga \
+	-display sdl \
+        -cdrom $(BUILD_DIR)/mos.iso \
 	gdb $(BUILD_DIR)/kernel.bin -ex "target remote localhost:1234"
