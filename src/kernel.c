@@ -3,7 +3,6 @@
 #include <stdarg.h>
 
 #include "multiboot.h"
-#include "io.h"
 #include "memory.h"
 #include "helpers.h"
 #include "vga.h"
