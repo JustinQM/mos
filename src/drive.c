@@ -111,7 +111,7 @@ int ata_identify(ATADevice device, uint16_t* out_buffer)
  * @buf       Pointer to a 512-byte buffer (must be word-aligned)
  * @return		0 on success, -1 on failure
  */
-int ata_write_sectors(ATADevice device, uint32_t lba, uint8_t sectors, uint8_t* buf)
+int ata_write_sectors(ATADevice device, uint32_t lba, uint16_t sectors, uint8_t* buf)
 {
 	if (sectors == 0) sectors = 256;
 	if (lba > 0x0FFFFFFF) return -1;
@@ -143,7 +143,7 @@ int ata_write_sectors(ATADevice device, uint32_t lba, uint8_t sectors, uint8_t* 
 	return 0;
 }
 
-int ata_read_sectors(ATADevice device, uint32_t lba, uint8_t sectors, uint8_t* buf)
+int ata_read_sectors(ATADevice device, uint32_t lba, uint16_t sectors, uint8_t* buf)
 {
 	if (sectors == 0) sectors = 256;
 	if (lba > 0x0FFFFFFF) return -1;

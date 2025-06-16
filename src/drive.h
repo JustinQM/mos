@@ -33,8 +33,8 @@ int find_ide_controllers(uint16_t *base0, uint16_t *base1);
 int ata_wait(ATADevice device);
 int ata_wait_drq(ATADevice device);
 
-int ata_write_sectors(ATADevice device, uint32_t lba, uint8_t sectors, uint8_t *buf);
-int ata_read_sectors(ATADevice device, uint32_t lba, uint8_t sectors, uint8_t *buf);
+int ata_write_sectors(ATADevice device, uint32_t lba, uint16_t sectors, uint8_t *buf);
+int ata_read_sectors(ATADevice device, uint32_t lba, uint16_t sectors, uint8_t *buf);
 
 // IDENTIFY one drive (drive = 0 for master, 1 for slave)
 int ata_identify(ATADevice device, uint16_t* out_buffer);
