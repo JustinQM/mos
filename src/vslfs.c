@@ -81,6 +81,18 @@ FSFileSystem* fs_attempt_load_filesystem(ATADevice device, uint64_t sector)
 	}
 	
 	memcpy((void*)&fs->superblock, (void*)data, sizeof(FSSuperblock));
+	free(data);
+
+	if (fs->superblock.magic != VSLFS_MAGIC)
+	{
+		free(fs);
+		return NULL;
+	}
+	if (fs->superblock.version > VSLFS_VERSION)
+	{
+		free(fs);
+		return NULL;
+	}
 
 	return fs;
 
