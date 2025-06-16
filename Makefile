@@ -85,7 +85,7 @@ iso_setup:
 .PHONY: qemu
 qemu: all iso_setup
 	qemu-system-x86_64 -m 2G \
-	-boot d \
+	-boot d -d int -no-reboot \
 	-drive file=$(BUILD_DIR)/image.img,format=raw \
 	-drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/x64/OVMF_CODE.4m.fd \
 	-drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/x64/OVMF_VARS.4m.fd \
@@ -96,7 +96,7 @@ qemu: all iso_setup
 .PHONY: qemu-debug
 qemu-debug: all iso_setup
 	qemu-system-x84_64 -s -S  -m 2G \
-	-boot d \
+	-boot d -d int -no-reboot \
 	-drive file=$(BUILD_DIR)/image.img,format=raw \
 	-drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/x64/OVMF_CODE.4m.fd \
 	-drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/x64/OVMF_VARS.4m.fd \
