@@ -51,11 +51,12 @@ FSFileSystem* fs_create_filesystem(ATADevice device, uint64_t sector, uint32_t b
 }
 
 
-FSFileSystem* fs_attempt_load_filesystem(ATADevice device, uint64_t sector)
+FSFileSystem* fs_attempt_read_filesystem(ATADevice device, uint64_t sector)
 {
 	FSFileSystem* fs = malloc(sizeof(FSFileSystem));
 	if (fs == NULL)
 	{
+		printf("couldn't alloc fs buffer\n");
 		return NULL;
 	}
 	memset((void*)fs, 0, sizeof(FSFileSystem));
@@ -65,6 +66,7 @@ FSFileSystem* fs_attempt_load_filesystem(ATADevice device, uint64_t sector)
 	if (data == NULL)
 	{
 		free(fs);
+		printf("couldn't alloc data buffer\n");
 		return NULL;
 	}
 
@@ -77,24 +79,24 @@ FSFileSystem* fs_attempt_load_filesystem(ATADevice device, uint64_t sector)
 		// sorry, future us
 		free(fs);
 		free(data);
+		printf("unable to read sector\n");
 		return NULL;
 	}
 	
 	memcpy((void*)&fs->superblock, (void*)data, sizeof(FSSuperblock));
 	free(data);
 
-	if (fs->superblock.magic != VSLFS_MAGIC)
+	if (fs->superblock.magic != VSLFS_MAGIC || fs->superblock.version > VSLFS_VERSION)
 	{
 		free(fs);
-		return NULL;
-	}
-	if (fs->superblock.version > VSLFS_VERSION)
-	{
-		free(fs);
+		printf("invalid magic or version\n");
+		printf("magic was %d, expected %d\n", fs->superblock.magic, VSLFS_MAGIC);
+		printf("ver was %d, expected %d\n", fs->superblock.version, VSLFS_VERSION);
 		return NULL;
 	}
 
 	return fs;
 
 }
+
 

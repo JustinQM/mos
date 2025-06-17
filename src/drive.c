@@ -191,3 +191,27 @@ void ata_fix_ident_info(ATAIdentifyDeviceInfo* info)
 	byteswap_string(info->model_number, 40);
 }
 
+ATADevice get_first_ata_device()
+{
+	ATADevice device;
+	uint16_t prim_base, sec_base;
+	if (find_ide_controllers(&prim_base, &sec_base))
+	{
+		printf("couldn't find a drive\n");
+		return device;
+	}
+
+	uint16_t ident_buffer[256];
+	device.io_base = prim_base;
+	device.drive = 0;
+	if (ata_identify(device, ident_buffer))
+	{
+		printf("couldn't identify primary drive 0\n");
+		return device;
+	}
+
+	ATAIdentifyDeviceInfo* ident_info = (ATAIdentifyDeviceInfo*)ident_buffer;
+	ata_fix_ident_info(ident_info);
+	printf("identified primary 0 drive \"%s\"\n", ident_info->model_number);
+	return device;
+}

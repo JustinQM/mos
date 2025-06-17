@@ -12,6 +12,7 @@
 #include "idt.h"
 #include "error.h"
 #include "vslfs.h"
+#include "bitmap.h"
 
 void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 {
@@ -40,37 +41,10 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 		printf("Could not initialize memory!\n");
 		return;
 	}
-
-	printf("Getting first IDE controller...");
-	uint16_t prim_base, sec_base;
-	int result = find_ide_controllers(&prim_base, &sec_base);
-
 	
-	if (result != 0)
-	{
-		term_set_fg_color(VGA_RED);
-		printf("couldn't find one\n");
-		return;
-	}
+	test_bitmap();
 
-	printf("found! %d and %d\n", prim_base, sec_base);
-
-	printf("identifying drives\n");
-	uint16_t ident_buffer[256];
-
-	ATADevice device = {prim_base, 0};
-
-	int ident_fail = ata_identify(device, ident_buffer);
-	if (ident_fail)
-	{
-		printf("couldn't identify primary drive 0\n");
-		return;
-	}
-
-	ATAIdentifyDeviceInfo* ident_info = (ATAIdentifyDeviceInfo*)ident_buffer;
-	ata_fix_ident_info(ident_info);
-	printf("hey guess what %s\n", &ident_info->model_number);
-
+	/*
 	if (0)
 	{
 		FSFileSystem* fs = fs_create_filesystem(device, 0, 8, 64, "My Beloved (:");
@@ -81,7 +55,7 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 	}
 	else
 	{
-		FSFileSystem* fs = fs_attempt_load_filesystem(device, 0);
+		FSFileSystem* fs = fs_attempt_read_filesystem(device, 0);
 		if (fs == NULL)
 		{
 			printf("couldn't read filesystem!\n");
@@ -94,5 +68,6 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 			printf("volume_name: %s\n", fs->superblock.volume_name);
 		}
 	}
+	*/
 
 }

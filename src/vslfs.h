@@ -71,8 +71,15 @@ typedef struct
 FSFileSystem* fs_create_filesystem(ATADevice device, uint64_t sector, uint32_t block_size, uint64_t block_count, const char* volume_name);
 
 // Attempts to read a filesystem from the given sector
-FSFileSystem* fs_attempt_load_filesystem(ATADevice device, uint64_t sector); // If a filesystem is here, it will load it in memory and return a pointer
+FSFileSystem* fs_attempt_read_filesystem(ATADevice device, uint64_t sector); // If a filesystem is here, it will load it in memory and return a pointer
+
+// TODO at some point, go through these function declarations and make them static to the C implementation
+// if they're not necessary to be exposed
 
 int fs_write_block(FSFileSystem* fs, uint64_t block, uint8_t* data);
 int fs_read_block(FSFileSystem* fs, uint64_t block, uint8_t* data);
+
+
+int fs_write_node(FSFileSystem* fs, uint64_t block, FSNode* node);
+int fs_read_node(FSFileSystem* fs, uint64_t block, FSNode* node);
 

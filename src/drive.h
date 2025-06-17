@@ -41,4 +41,5 @@ int ata_identify(ATADevice device, uint16_t* out_buffer);
 
 void ata_fix_ident_info(ATAIdentifyDeviceInfo* info);
 
+ATADevice get_first_ata_device();
 
