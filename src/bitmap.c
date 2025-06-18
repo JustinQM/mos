@@ -9,7 +9,12 @@ static size_t get_index_for_bit(size_t bit)
 
 int bitmap_allocate(Bitmap bitmap, size_t count, uint32_t* results)
 {
+	if (count > bitmap.cluster_count*32)
+		return 1; // bruh you trippin
+	
 	uint32_t* ptr = bitmap.map;
+	uint32_t** seen_clusters = malloc(sizeof(uint32_t) * count); // keep track of every cluster we end up going into
+	size_t seen_clusters_count = 0;
 	uint32_t bit_index = 0; 
 	size_t result_index = 0;
 	// continue searching each cluster until we run through them all
@@ -26,17 +31,31 @@ int bitmap_allocate(Bitmap bitmap, size_t count, uint32_t* results)
 			{
 				results[result_index++] = bit_index;
 				result_mask |= mask;
+				if (seen_clusters_count == 0 || seen_clusters[seen_clusters_count - 1] != ptr)
+				{
+					seen_clusters[seen_clusters_count++] = ptr;
+				}
+
 				if (result_index >= count)
 				{
+					// only mark as occupied when we've found enough space
 					*ptr |= result_mask;
+					for (size_t seen_cluster_index = seen_clusters_count - 2; seen_cluster_index >= 0; seen_cluster_index--)
+					{
+						*seen_clusters[seen_cluster_index] = 0xFFFFFFFF; // for 32 bit;
+						if (seen_cluster_index == 0)
+							break; // unsigned moment
+					}
+					free(seen_clusters);
 					return 0;
 				}
 			}
 			bit_index++;
 		}
-		*ptr |= result_mask;
+		*ptr |= result_mask; // TODO if we're at this point, doesn't this imply that the cluster is full, and *ptr can just be set to the max uint?
 		ptr++;
 	}
+	free(seen_clusters);
 	return 1;
 }
 
@@ -56,6 +75,8 @@ void test_bitmap()
 	Bitmap bitmap = {8, bitmap_data};
 
 	bitmap_data[0] = 0b01101100011010111111101111111110;
+	bitmap_data[1] = 0b11111111111111011111111111111111;
+	bitmap_data[2] = 0b01111111111111111111111111111101;
 
 	uint32_t alloc_results[12];
 	int alloc_status = bitmap_allocate(bitmap, 12, alloc_results);
