@@ -59,6 +59,23 @@ int bitmap_allocate(Bitmap bitmap, size_t count, uint32_t* results)
 	return 1;
 }
 
+int bitmap_free(Bitmap bitmap, size_t count, uint32_t* indices)
+{
+	for (size_t i = 0; i < count; i++)
+	{
+		size_t cluster_index = indices[i]/32;
+		if (cluster_index >= bitmap.cluster_count)
+		{
+			return 1; // caller should've seen this. they know the boundaries of the bitmap
+			// maybe incorporate some way to undo the writes we did??
+		}
+
+		uint32_t mask = 1 << (indices[i]%32);
+		bitmap.map[cluster_index] &= ~mask;
+	}
+	return 0;
+}
+
 void test_bitmap()
 {
 	ATADevice device = get_first_ata_device();
@@ -78,8 +95,9 @@ void test_bitmap()
 	bitmap_data[1] = 0b11111111111111011111111111111111;
 	bitmap_data[2] = 0b01111111111111111111111111111101;
 
-	uint32_t alloc_results[12];
-	int alloc_status = bitmap_allocate(bitmap, 12, alloc_results);
+	printf("initial bitmap: %d, %d, %d, %d\n", bitmap_data[0], bitmap_data[1], bitmap_data[2], bitmap_data[3]);
+	uint32_t alloc_results[13];
+	int alloc_status = bitmap_allocate(bitmap, 13, alloc_results);
 
 	if (alloc_status)
 	{
@@ -88,11 +106,24 @@ void test_bitmap()
 	else
 	{
 		printf("successfully allocated bitmap\n");
-		for (int i = 0; i < 12; i++)
+		for (int i = 0; i < 13; i++)
 		{
 			printf("%d: %d / ", i, alloc_results[i]);
 		}
 		printf("\n");
+		printf("allocated bitmap: %d, %d, %d, %d\n", bitmap_data[0], bitmap_data[1], bitmap_data[2], bitmap_data[3]);
+
+		printf("freeing bitmap\n");
+
+		if (bitmap_free(bitmap, 13, alloc_results))
+		{
+			printf("failed to free bitmap\n");
+		}
+		else
+		{
+			printf("successfully freed bitmap\n");
+			printf("freed bitmap: %d, %d, %d, %d\n", bitmap_data[0], bitmap_data[1], bitmap_data[2], bitmap_data[3]);
+		}
 
 	}
 }
