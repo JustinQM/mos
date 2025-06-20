@@ -24,12 +24,11 @@ typedef struct
 	uint64_t block_count;	// Number of blocks on this volume
 	char volume_name[16];	// Name of the volume in ASCII
 
-	// addition to the spec
-	// multiple bitmap blocks, since a block can only describe no more than 512*8 blocks, or 4096 blocks
+	uint32_t inode_size;	// inode size, in bytes (typically 128 or 256)
+	uint64_t inode_bitmap_ptr;	// Block address of where the INode bitmap begins
+	uint32_t inode_bitmap_size;	// Size of the INode bitmap, in Blocks
 	uint64_t data_bitmap_ptr;	// Block address of where the Data bitmap begins
 	uint32_t data_bitmap_size;	// Size of the data bitmap, in Blocks
-	uint64_t node_bitmap_ptr;	// Block address of where the Node bitmap begins
-	uint32_t node_bitmap_size;	// Size of the Node bitmap, in Blocks
 
 	uint64_t root_ptr;			// Block address of the root directory node
 } FSSuperblock;
@@ -50,7 +49,7 @@ enum FS_NODE_FLAGS {
 
 typedef struct
 {
-	uint32_t flags;			// Bitflags of the Node. see FS_NODE_FLAGS
+	uint32_t flags;			// Bitflags of the INode. see FS_NODE_FLAGS
 	uint64_t parent_node;	// Block pointer to the node that contains this. NULL if this is the root node
 	uint64_t creation_date;	// UNIX timestamp of when this was created
 	uint64_t modified_date; // UNIX timestamp of when this was last modified
@@ -58,7 +57,7 @@ typedef struct
 	uint64_t footer_size;	// The number of bytes of userdata in the last Block it occupies.
 							// Size of the file in bytes can be calculated by:
 							// FSSuperblock.block_size * 512 * max(0, block_count-1) + footer_size
-} FSNode;
+} FSINode;
 
 typedef struct
 {
@@ -68,6 +67,7 @@ typedef struct
 
 
 // Create a filesystem at the given sector. Allocates and returns a pointer to FSSuperblock with the info
+// `block_size` is in sectors
 FSFileSystem* fs_create_filesystem(ATADevice device, uint64_t sector, uint32_t block_size, uint64_t block_count, const char* volume_name);
 
 // Attempts to read a filesystem from the given sector
@@ -80,6 +80,6 @@ int fs_write_block(FSFileSystem* fs, uint64_t block, uint8_t* data);
 int fs_read_block(FSFileSystem* fs, uint64_t block, uint8_t* data);
 
 
-int fs_write_node(FSFileSystem* fs, uint64_t block, FSNode* node);
-int fs_read_node(FSFileSystem* fs, uint64_t block, FSNode* node);
+int fs_write_node(FSFileSystem* fs, uint64_t block, FSINode* node);
+int fs_read_node(FSFileSystem* fs, uint64_t block, FSINode* node);
 

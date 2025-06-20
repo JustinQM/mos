@@ -1,6 +1,7 @@
 #include "vslfs.h"
 #include "string.h"
 #include "memory.h"
+#include "bitmap.h"
 
 int fs_write_block(FSFileSystem* fs, uint64_t block, uint8_t* data)
 {
@@ -28,7 +29,61 @@ FSFileSystem* fs_create_filesystem(ATADevice device, uint64_t sector, uint32_t b
 	fs->sector = sector;
 	fs->device = device;
 	
-	// TODO: bitmap pointers and sizes
+	/*
+		inodes take up much less space than an entire block,
+		so we try to squeeze a bunch into just one block.
+
+		worst-case scenario, there is one Data block for every inode
+		let's just assume that we'll have one inode for every block
+		so we need to find out how many inodes we'd want
+		but at the same time, more inodes means less blocks for Data
+		also need to factor in the bitmaps
+		
+		inputs:
+		x = blocks available
+		c = count of inodes in a block
+		cb = count of bits in a block (usually 32768)
+
+		outputs:
+		i = inode blocks
+		d = data blocks
+		bi = blocks for inode bitmap
+		bd = blocks for data bitmap
+
+		bi + bd + i + d = x
+		or
+		2*bd + i + d = x
+
+		i = d/c
+			d = c*i
+		bd = d/cb
+		bi = bd
+		
+		solve for d:
+			
+			2*(d/cb) + d/c + d = x
+			(2*d)/cb + d/c + d = x
+			(2*d*c)/(cb*c) + (d*cb)/(cb*c) + (d*cb*c)/(cb*c) = x
+			(2*d*c + d*cb + d*cb*c)/(cb*c) = x
+			((2*c + cb + cb*c) * d) / (cb*c) = x
+			(2*c + cb + cb*c) * d = x*cb*c
+			d = (x*cb*c) / (2*c + cb + cb*c)
+
+		solve for i:
+			i = ((x*cb*c) / (2*c + cb + cb*c)) / c
+			i = (x*cb) / (2*c + cb + cb*c)
+
+		solve for bd:
+			bd = ((x * cb * c) / (2*c + cb + cb*c)) / cb
+			bd = (x * c) / (2*c + cb + cb*c)
+
+		solve for bi:
+			bi = bd
+
+			
+		
+	*/
+
 	
 	uint8_t* data = malloc(512*block_size);
 	if (data == NULL)
@@ -36,6 +91,8 @@ FSFileSystem* fs_create_filesystem(ATADevice device, uint64_t sector, uint32_t b
 		free(fs);
 		return NULL;
 	}
+
+
 	memset((void*)data, 0, 512*block_size);
 	memcpy((void*)data, &fs->superblock, sizeof(FSSuperblock));
 	int result = fs_write_block(fs, 0, data);
