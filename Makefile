@@ -95,12 +95,12 @@ qemu: all iso_setup
 
 .PHONY: qemu-debug
 qemu-debug: all iso_setup
-	qemu-system-x84_64 -s -S  -m 2G \
+	qemu-system-x86_64 -s -S  -m 2G \
 	-boot d -d int -no-reboot \
 	-drive file=$(BUILD_DIR)/image.img,format=raw \
 	-drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/x64/OVMF_CODE.4m.fd \
 	-drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/x64/OVMF_VARS.4m.fd \
 	-device virtio-vga \
 	-display sdl \
-        -cdrom $(BUILD_DIR)/mos.iso \
+        -cdrom $(BUILD_DIR)/mos.iso &
 	gdb $(BUILD_DIR)/kernel.bin -ex "target remote localhost:1234"

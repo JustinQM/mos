@@ -14,7 +14,7 @@ align 4
     dd MBFLAGS
     dd CHECKSUM
 
-section .bss
+section .ptables
 align 4096
 p4_table:
     resb 4096
@@ -27,8 +27,8 @@ section .gdt
 gdt_start:
     dq 0                               ; null descriptor
 
-    ; code segment: base=0, limit=0xFFFFF, G=1, D=1, executable, read
-    dq 0x00CF9A000000FFFF              ; flag bits set for 4 KiB pages
+    ; 64‑bit code segment: G=1, D=0, L=1, executable, read
+    dq 0x00AF9A000000FFFF
 
     ; data segment: base=0, limit=0xFFFFF, G=1, D=1, read/write
     dq 0x00CF92000000FFFF
@@ -78,6 +78,7 @@ _start:
 
 BITS 64
 .long_mode:
+    cld
     ; zero out bss
     xor rax, rax
     mov rdi, __bss_start
