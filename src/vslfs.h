@@ -1,10 +1,12 @@
 #pragma once
 #include <stdint.h>
 #include "drive.h"
+#include <stddef.h>
 
 // spec: https://ranthos.com/u/VSLFS-2.0.pdf
 #define VSLFS_VERSION 1
 #define VSLFS_MAGIC 0x913b21b118ea4594 // this is just a randomly generated 64bit int. any derived filesystems with a different spec should regenerate this
+#define VSLFS_INODE_SIZE 128
 
 /*
  * Here's the planned spec
@@ -30,7 +32,10 @@ typedef struct
 	uint64_t data_bitmap_ptr;	// Block address of where the Data bitmap begins
 	uint32_t data_bitmap_size;	// Size of the data bitmap, in Blocks
 
-	uint64_t root_ptr;			// Block address of the root directory node
+	uint64_t inode_ptr;		// Block address of where the inodes begin 
+	uint64_t inode_size;	// Number of INode blocks
+	uint64_t data_ptr;		// Block address of where the data begins (typically the root node)
+	uint64_t data_size;		// Number of Data blocks
 } FSSuperblock;
 
 
@@ -73,6 +78,7 @@ FSFileSystem* fs_create_filesystem(ATADevice device, uint64_t sector, uint32_t b
 // Attempts to read a filesystem from the given sector
 FSFileSystem* fs_attempt_read_filesystem(ATADevice device, uint64_t sector); // If a filesystem is here, it will load it in memory and return a pointer
 
+void fs_calculate_sizes(size_t blocks_available, uint32_t inodes_per_block, uint32_t bits_per_block, size_t* blocks_inodes, size_t* blocks_data, size_t* blocks_inode_bitmap, size_t* blocks_data_bitmap);
 // TODO at some point, go through these function declarations and make them static to the C implementation
 // if they're not necessary to be exposed
 
@@ -82,4 +88,6 @@ int fs_read_block(FSFileSystem* fs, uint64_t block, uint8_t* data);
 
 int fs_write_node(FSFileSystem* fs, uint64_t block, FSINode* node);
 int fs_read_node(FSFileSystem* fs, uint64_t block, FSINode* node);
+
+void test_vslfs();
 

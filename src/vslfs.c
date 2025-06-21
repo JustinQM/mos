@@ -13,6 +13,20 @@ int fs_read_block(FSFileSystem* fs, uint64_t block, uint8_t* data)
 	return ata_read_sectors(fs->device, fs->sector + block * fs->superblock.block_size, fs->superblock.block_size, data);
 }
 
+void fs_calculate_sizes(size_t blocks_available, uint32_t inodes_per_block, uint32_t bits_per_block, size_t* blocks_inodes, size_t* blocks_data, size_t* blocks_inode_bitmap, size_t* blocks_data_bitmap)
+{
+	size_t denominator = 2 * inodes_per_block + bits_per_block * (inodes_per_block + 1);
+	
+	// assign blocks_data at the end. we'll shrink it accordingly depending on how much space we have left.
+	// round these up to the nearest int
+	*blocks_inodes = (blocks_available * bits_per_block + denominator - 1) / denominator;
+	*blocks_inode_bitmap = (blocks_available * inodes_per_block + denominator - 1) / denominator;
+	*blocks_data_bitmap = *blocks_inode_bitmap;
+
+	*blocks_data = blocks_available - *blocks_inodes - *blocks_inode_bitmap - *blocks_data_bitmap;
+
+}
+
 FSFileSystem* fs_create_filesystem(ATADevice device, uint64_t sector, uint32_t block_size, uint64_t block_count, const char* volume_name)
 {
 	FSFileSystem* fs = malloc(sizeof(FSFileSystem));
@@ -71,7 +85,7 @@ FSFileSystem* fs_create_filesystem(ATADevice device, uint64_t sector, uint32_t b
 
 		solve for i:
 			i = ((x*cb*c) / (2*c + cb + cb*c)) / c
-			i = (x*cb) / (2*c + cb + cb*c)
+i = (x*cb) / (2*c + cb + cb*c)
 
 		solve for bd:
 			bd = ((x * cb * c) / (2*c + cb + cb*c)) / cb
@@ -92,6 +106,24 @@ FSFileSystem* fs_create_filesystem(ATADevice device, uint64_t sector, uint32_t b
 		return NULL;
 	}
 
+	size_t blocks_inodes, blocks_data, blocks_inode_bitmap, blocks_data_bitmap;
+	// subtract the superblock
+	fs_calculate_sizes(block_count - 1, block_size*512/VSLFS_INODE_SIZE, block_size*512*8, &blocks_inodes, &blocks_data, &blocks_inode_bitmap, &blocks_data_bitmap);
+
+	printf("blocks_inodes       %d\n", blocks_inodes);
+	printf("blocks_data         %d\n", blocks_data);
+	printf("blocks_inode_bitmap %d\n", blocks_inode_bitmap);
+	printf("blocks_data_bitmap  %d\n", blocks_data_bitmap);
+
+	fs->superblock.inode_size = VSLFS_INODE_SIZE;
+	fs->superblock.inode_bitmap_ptr = 1;
+	fs->superblock.inode_bitmap_size = blocks_inode_bitmap;
+	fs->superblock.data_bitmap_ptr = fs->superblock.inode_bitmap_ptr + blocks_inode_bitmap;
+	fs->superblock.data_bitmap_size = blocks_data_bitmap;
+	fs->superblock.inode_ptr = fs->superblock.data_bitmap_ptr + blocks_data_bitmap;
+	fs->superblock.inode_size = blocks_inodes;
+	fs->superblock.data_ptr = fs->superblock.inode_ptr + blocks_inodes;
+	fs->superblock.data_size = blocks_data;
 
 	memset((void*)data, 0, 512*block_size);
 	memcpy((void*)data, &fs->superblock, sizeof(FSSuperblock));
@@ -156,4 +188,19 @@ FSFileSystem* fs_attempt_read_filesystem(ATADevice device, uint64_t sector)
 
 }
 
+void test_vslfs()
+{
+	ATADevice device = get_first_ata_device();
+	if (device.io_base == 0)
+	{
+		printf("failed to get an ata device\n");
+		return;
+	}
+
+	FSFileSystem* fs = fs_create_filesystem(device, 0, 8, 256 * 1024*1024 / 8 / 512, "Hello!");
+	if (fs == NULL)
+		printf("Couldn't create filesystem!\n");
+	else
+		printf("successfully made FS!\n");
+}
 

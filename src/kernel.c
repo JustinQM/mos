@@ -42,32 +42,6 @@ void kernel_main(uint32_t multiboot_magic, void* multiboot_info)
 		return;
 	}
 	
-	test_bitmap();
-
-	/*
-	if (0)
-	{
-		FSFileSystem* fs = fs_create_filesystem(device, 0, 8, 64, "My Beloved (:");
-		if (fs == NULL)
-			printf("Couldn't create filesystem!\n");
-		else
-			printf("successfully made FS!\n");
-	}
-	else
-	{
-		FSFileSystem* fs = fs_attempt_read_filesystem(device, 0);
-		if (fs == NULL)
-		{
-			printf("couldn't read filesystem!\n");
-		}
-		else
-		{
-			printf("Read filesystem!\n");
-			printf("block_size: %d\n", fs->superblock.block_size);
-			printf("block_count: %d\n", fs->superblock.block_count);
-			printf("volume_name: %s\n", fs->superblock.volume_name);
-		}
-	}
-	*/
+	test_vslfs();
 
 }
