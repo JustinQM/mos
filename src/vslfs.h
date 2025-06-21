@@ -26,7 +26,6 @@ typedef struct
 	uint64_t block_count;	// Number of blocks on this volume
 	char volume_name[16];	// Name of the volume in ASCII
 
-	uint32_t inode_size;	// inode size, in bytes (typically 128 or 256)
 	uint64_t inode_bitmap_ptr;	// Block address of where the INode bitmap begins
 	uint32_t inode_bitmap_size;	// Size of the INode bitmap, in Blocks
 	uint64_t data_bitmap_ptr;	// Block address of where the Data bitmap begins

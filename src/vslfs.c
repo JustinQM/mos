@@ -115,7 +115,6 @@ i = (x*cb) / (2*c + cb + cb*c)
 	printf("blocks_inode_bitmap %d\n", blocks_inode_bitmap);
 	printf("blocks_data_bitmap  %d\n", blocks_data_bitmap);
 
-	fs->superblock.inode_size = VSLFS_INODE_SIZE;
 	fs->superblock.inode_bitmap_ptr = 1;
 	fs->superblock.inode_bitmap_size = blocks_inode_bitmap;
 	fs->superblock.data_bitmap_ptr = fs->superblock.inode_bitmap_ptr + blocks_inode_bitmap;
